@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  transkriptor:
+    build: .
+    container_name: transkriptor_webapp
+    restart: always
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./downloads:/app/downloads  # Persistir downloads se necessário
+    env_file:
+      - .env
+    environment:
+      - PYTHONUNBUFFERED=1
+      - OPENAI_API_KEY=${OPENAI_API_KEY}

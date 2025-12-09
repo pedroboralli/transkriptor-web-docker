@@ -1,0 +1,14 @@
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+*.log
+*.mp4
+*.mp3
+.git
+.gitignore
+__MACOSX
+.DS_Store
