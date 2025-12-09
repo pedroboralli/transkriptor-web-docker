@@ -67,6 +67,10 @@ def transcribe_with_ytdlp(url):
         'writeautomaticsub': True,
         'subtitleslangs': ['pt', 'pt-BR', 'en'],
         'quiet': True,
+        # Anti-bot configurations
+        'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'referer': 'https://www.youtube.com/',
+        'extractor_args': {'youtube': {'player_client': ['android', 'web']}},
     }
     
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -241,7 +245,13 @@ def list_formats():
         return jsonify({'error': 'Please provide a valid URL'}), 400
 
     try:
-        ydl_opts = {'quiet': True, 'skip_download': True}
+        ydl_opts = {
+            'quiet': True,
+            'skip_download': True,
+            'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'referer': 'https://www.youtube.com/',
+            'extractor_args': {'youtube': {'player_client': ['android', 'web']}},
+        }
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=False)
 
@@ -297,6 +307,10 @@ def download_file():
             'noplaylist': True,
             'quiet': False,
             'no_warnings': False,
+            # Anti-bot configurations
+            'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'referer': 'https://www.youtube.com/',
+            'extractor_args': {'youtube': {'player_client': ['android', 'web']}},
         }
         
         if convert_to_mp3:
