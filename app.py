@@ -14,7 +14,7 @@ app = Flask(__name__)
 # Configuração OpenAI
 # Tenta pegar da variável de ambiente (Seguro para VPS/GitHub)
 # Se não houver, usa a chave hardcoded (apenas para desenvolvimento local)
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "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")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "sua_api_key")
 openai.api_key = OPENAI_API_KEY
 
 # Helper function to extract video ID
