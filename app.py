@@ -194,6 +194,8 @@ def transcribe():
 
     try:
         # Try finding transcript via API
+        # We wrap the entire API attempt in a broad try/except to handle any library version issues
+        # or missing attributes (like the reported 'get_transcript' error on VPS).
         if hasattr(YouTubeTranscriptApi, 'list_transcripts'):
             transcript_list = YouTubeTranscriptApi.list_transcripts(vid)
             
@@ -209,28 +211,18 @@ def transcribe():
             return jsonify({'transcription': texto})
         else:
              # Legacy list method
+             # Note: If this fails with AttributeError on VPS, it will be caught below
              seq = YouTubeTranscriptApi.get_transcript(vid, languages=['pt-BR', 'pt'])
              texto = " ".join([s['text'] for s in seq])
              return jsonify({'transcription': texto})
 
-    except (TranscriptsDisabled, NoTranscriptFound) as e:
-        print(f"API Error: {e}. Trying yt-dlp fallback.")
+    except Exception as e:
+        print(f"Primary API Error ({e}). Trying yt-dlp fallback.")
         try:
             texto = transcribe_with_ytdlp(url)
             return jsonify({'transcription': texto})
         except Exception as e2:
              return jsonify({'error': f"Could not transcribe video: {str(e2)}"}), 500
-    except Exception as e:
-        error_msg = str(e)
-        if "no element found" in error_msg.lower() or "xml" in error_msg.lower():
-             print(f"XML Error ({e}). Trying yt-dlp fallback.")
-             try:
-                 texto = transcribe_with_ytdlp(url)
-                 return jsonify({'transcription': texto})
-             except Exception as e2:
-                 return jsonify({'error': f"Could not transcribe video: {str(e2)}"}), 500
-        else:
-            return jsonify({'error': str(e)}), 500
 
 @app.route('/thumbnail', methods=['POST'])
 def thumbnail():
