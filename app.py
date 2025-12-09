@@ -294,15 +294,24 @@ def download_file():
         ydl_opts = {
             'format': format_id,
             'outtmpl': f'{download_dir}/%(title)s.%(ext)s',
-            'noplaylist': True
+            'noplaylist': True,
+            'quiet': False,
+            'no_warnings': False,
         }
         
         if convert_to_mp3:
+            # Configuração mais robusta para conversão MP3
+            ydl_opts['format'] = 'bestaudio/best'  # Garante melhor qualidade de áudio
             ydl_opts['postprocessors'] = [{
                 'key': 'FFmpegExtractAudio',
                 'preferredcodec': 'mp3',
                 'preferredquality': '192',
             }]
+            # Adiciona processador de metadata para garantir compatibilidade
+            ydl_opts.setdefault('postprocessor_args', []).extend([
+                '-ar', '44100',  # Sample rate
+                '-ac', '2',      # Stereo
+            ])
         
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=True)
