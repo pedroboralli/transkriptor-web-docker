@@ -221,7 +221,16 @@ def transcribe():
         except Exception as e2:
              return jsonify({'error': f"Could not transcribe video: {str(e2)}"}), 500
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        error_msg = str(e)
+        if "no element found" in error_msg.lower() or "xml" in error_msg.lower():
+             print(f"XML Error ({e}). Trying yt-dlp fallback.")
+             try:
+                 texto = transcribe_with_ytdlp(url)
+                 return jsonify({'transcription': texto})
+             except Exception as e2:
+                 return jsonify({'error': f"Could not transcribe video: {str(e2)}"}), 500
+        else:
+            return jsonify({'error': str(e)}), 500
 
 @app.route('/thumbnail', methods=['POST'])
 def thumbnail():
