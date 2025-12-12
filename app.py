@@ -59,6 +59,13 @@ def extract_subtitle_text(subtitle_formats):
                     continue
     return None
 
+def get_cookie_file():
+    """Returns the path to cookies.txt if it exists, otherwise None"""
+    cookie_path = os.path.join(os.getcwd(), 'cookies.txt')
+    if os.path.exists(cookie_path):
+        return cookie_path
+    return None
+
 def transcribe_with_ytdlp(url):
     """Fallback transcript with yt-dlp"""
     ydl_opts = {
@@ -72,6 +79,11 @@ def transcribe_with_ytdlp(url):
         'referer': 'https://www.youtube.com/',
         'extractor_args': {'youtube': {'player_client': ['android', 'web']}},
     }
+
+    cookie_file = get_cookie_file()
+    if cookie_file:
+        ydl_opts['cookiefile'] = cookie_file
+        print(f"Using cookie file: {cookie_file}")
     
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(url, download=False)
@@ -252,6 +264,11 @@ def list_formats():
             'referer': 'https://www.youtube.com/',
             'extractor_args': {'youtube': {'player_client': ['android', 'web']}},
         }
+        
+        cookie_file = get_cookie_file()
+        if cookie_file:
+            ydl_opts['cookiefile'] = cookie_file
+
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=False)
 
@@ -313,6 +330,10 @@ def download_file():
             'extractor_args': {'youtube': {'player_client': ['android', 'web']}},
         }
         
+        cookie_file = get_cookie_file()
+        if cookie_file:
+            ydl_opts['cookiefile'] = cookie_file
+
         if convert_to_mp3:
             # Configuração mais robusta para conversão MP3
             ydl_opts['format'] = 'bestaudio/best'  # Garante melhor qualidade de áudio
