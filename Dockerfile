@@ -31,9 +31,4 @@ EXPOSE 8888
 
 # Comando para iniciar a aplicação usando Gunicorn
 # Configurações otimizadas para Easypanel
-CMD ["gunicorn", "--bind", "0.0.0.0:8888", "app:app", \
-     "--workers", "2", \
-     "--timeout", "120", \
-     "--access-logfile", "-", \
-     "--error-logfile", "-", \
-     "--log-level", "info"]
+CMD ["gunicorn", "--bind", "0.0.0.0:8888", "app:app", "--workers", "2", "--timeout", "120", "--access-logfile", "-", "--error-logfile", "-", "--log-level", "info"]
