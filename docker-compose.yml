@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  transkriptor:
+    build: .
+    container_name: transkriptor_webapp
+    restart: unless-stopped
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./downloads:/app/downloads
+    environment:
+      - PYTHONUNBUFFERED=1
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-sua_api_key}
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
