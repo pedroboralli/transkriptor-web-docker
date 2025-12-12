@@ -77,13 +77,8 @@ def transcribe_with_ytdlp(url):
         # Anti-bot configurations
         'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'referer': 'https://www.youtube.com/',
-        'extractor_args': {'youtube': {'player_client': ['android', 'web']}},
+        'extractor_args': {'youtube': {'player_client': ['ios']}},
     }
-
-    cookie_file = get_cookie_file()
-    if cookie_file:
-        ydl_opts['cookiefile'] = cookie_file
-        print(f"Using cookie file: {cookie_file}")
     
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(url, download=False)
@@ -262,13 +257,9 @@ def list_formats():
             'skip_download': True,
             'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
             'referer': 'https://www.youtube.com/',
-            'extractor_args': {'youtube': {'player_client': ['android', 'web']}},
+            'extractor_args': {'youtube': {'player_client': ['ios']}},
         }
         
-        cookie_file = get_cookie_file()
-        if cookie_file:
-            ydl_opts['cookiefile'] = cookie_file
-
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=False)
 
@@ -327,13 +318,9 @@ def download_file():
             # Anti-bot configurations
             'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
             'referer': 'https://www.youtube.com/',
-            'extractor_args': {'youtube': {'player_client': ['android', 'web']}},
+            'extractor_args': {'youtube': {'player_client': ['ios']}},
         }
         
-        cookie_file = get_cookie_file()
-        if cookie_file:
-            ydl_opts['cookiefile'] = cookie_file
-
         if convert_to_mp3:
             # Configuração mais robusta para conversão MP3
             ydl_opts['format'] = 'bestaudio/best'  # Garante melhor qualidade de áudio
