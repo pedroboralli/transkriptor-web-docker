@@ -205,35 +205,68 @@ def transcribe():
 
     try:
         # Try finding transcript via API
-        # We wrap the entire API attempt in a broad try/except to handle any library version issues
-        # or missing attributes (like the reported 'get_transcript' error on VPS).
         if hasattr(YouTubeTranscriptApi, 'list_transcripts'):
+            print(f"DEBUG: Usando list_transcripts para {vid}")
             transcript_list = YouTubeTranscriptApi.list_transcripts(vid)
             
-            try:
-                # Prefer Portuguese
-                transcript = transcript_list.find_transcript(['pt', 'pt-BR'])
-            except:
-                # Fallback to any available
-                transcript = next(iter(transcript_list))
-                
+            # Lista todas as transcrições disponíveis
+            available_transcripts = list(transcript_list)
+            print(f"DEBUG: Transcrições disponíveis: {[t.language_code for t in available_transcripts]}")
+            
+            transcript = None
+            # Tenta encontrar em português primeiro
+            for t in available_transcripts:
+                if t.language_code in ['pt', 'pt-BR']:
+                    transcript = t
+                    print(f"DEBUG: Encontrada transcrição em: {t.language_code}")
+                    break
+            
+            # Se não encontrar, pega a primeira disponível
+            if transcript is None and available_transcripts:
+                transcript = available_transcripts[0]
+                print(f"DEBUG: Usando primeira disponível: {transcript.language_code}")
+            
+            if transcript is None:
+                raise NoTranscriptFound(vid, [], [])
+            
             seq = transcript.fetch()
-            texto = " ".join([s['text'] for s in seq])
-            return jsonify({'transcription': texto})
         else:
-             # Legacy list method
-             # Note: If this fails with AttributeError on VPS, it will be caught below
-             seq = YouTubeTranscriptApi.get_transcript(vid, languages=['pt-BR', 'pt'])
-             texto = " ".join([s['text'] for s in seq])
-             return jsonify({'transcription': texto})
-
-    except Exception as e:
-        print(f"Primary API Error ({e}). Trying yt-dlp fallback.")
+            # Fallback
+            print("DEBUG: Usando get_transcript (fallback)")
+            seq = YouTubeTranscriptApi.get_transcript(vid, languages=['pt-BR', 'pt'])
+        
+        texto = " ".join([s['text'] for s in seq])
+        print("DEBUG: Transcrição concluída com sucesso")
+        return jsonify({'transcription': texto})
+        
+    except TranscriptsDisabled:
+        print("ERROR: Legendas desativadas")
+        return jsonify({'error': 'Legendas estão desativadas para este vídeo.'}), 400
+    except NoTranscriptFound:
+        print("ERROR: Nenhuma transcrição encontrada via API, tentando yt-dlp")
         try:
             texto = transcribe_with_ytdlp(url)
             return jsonify({'transcription': texto})
         except Exception as e2:
-             return jsonify({'error': f"Could not transcribe video: {str(e2)}"}), 500
+            print(f"ERROR: Falha no fallback yt-dlp: {e2}")
+            return jsonify({'error': 'Não foi possível obter legendas. O vídeo pode não ter legendas disponíveis.'}), 500
+    except Exception as e:
+        print(f"ERROR: Erro ao transcrever: {type(e).__name__}: {e}")
+        import traceback
+        traceback.print_exc()
+        
+        error_msg = str(e)
+        # Detecta erro de XML/Parse e tenta yt-dlp como fallback
+        if "no element found" in error_msg.lower() or "xml" in error_msg.lower() or "parse" in error_msg.lower():
+            print("INFO: Erro de XML/Parse detectado, tentando yt-dlp como fallback")
+            try:
+                texto = transcribe_with_ytdlp(url)
+                return jsonify({'transcription': texto})
+            except Exception as e2:
+                print(f"ERROR: Falha no fallback yt-dlp: {e2}")
+                return jsonify({'error': 'Erro ao processar legendas do YouTube. Tente novamente em alguns minutos.'}), 500
+        else:
+            return jsonify({'error': f"Could not transcribe video: {str(e)}"}), 500
 
 @app.route('/thumbnail', methods=['POST'])
 def thumbnail():

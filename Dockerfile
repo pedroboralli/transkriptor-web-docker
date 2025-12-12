@@ -12,6 +12,8 @@ COPY requirements.txt .
 
 # Instalar dependências Python
 RUN pip install --no-cache-dir -r requirements.txt
+# Forçar atualização do yt-dlp para a versão mais recente do master para corrigir problemas de extração
+RUN pip install --no-cache-dir --force-reinstall https://github.com/yt-dlp/yt-dlp/archive/master.zip
 # Instalar gunicorn para servidor de produção
 RUN pip install gunicorn
 
