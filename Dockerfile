@@ -30,5 +30,10 @@ RUN mkdir -p /app/downloads
 EXPOSE 8888
 
 # Comando para iniciar a aplicação usando Gunicorn
-# Timeout aumentado para 120s para permitir processamentos longos
-CMD ["gunicorn", "--bind", "0.0.0.0:8888", "app:app", "--workers", "3", "--timeout", "120"]
+# Configurações otimizadas para Easypanel
+CMD ["gunicorn", "--bind", "0.0.0.0:8888", "app:app", \
+     "--workers", "2", \
+     "--timeout", "120", \
+     "--access-logfile", "-", \
+     "--error-logfile", "-", \
+     "--log-level", "info"]
