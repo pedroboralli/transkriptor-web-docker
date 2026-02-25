@@ -14,7 +14,7 @@ app = Flask(__name__)
 # Configuração OpenAI
 # Tenta pegar da variável de ambiente (Seguro para VPS/GitHub)
 # Se não houver, usa a chave hardcoded (apenas para desenvolvimento local)
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "sua_api_key")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "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")
 openai.api_key = OPENAI_API_KEY
 
 # Helper function to extract video ID
@@ -59,13 +59,6 @@ def extract_subtitle_text(subtitle_formats):
                     continue
     return None
 
-def get_cookie_file():
-    """Returns the path to cookies.txt if it exists, otherwise None"""
-    cookie_path = os.path.join(os.getcwd(), 'cookies.txt')
-    if os.path.exists(cookie_path):
-        return cookie_path
-    return None
-
 def transcribe_with_ytdlp(url):
     """Fallback transcript with yt-dlp"""
     ydl_opts = {
@@ -74,10 +67,6 @@ def transcribe_with_ytdlp(url):
         'writeautomaticsub': True,
         'subtitleslangs': ['pt', 'pt-BR', 'en'],
         'quiet': True,
-        # Anti-bot configurations
-        'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'referer': 'https://www.youtube.com/',
-        'extractor_args': {'youtube': {'player_client': ['ios']}},
     }
     
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -206,67 +195,33 @@ def transcribe():
     try:
         # Try finding transcript via API
         if hasattr(YouTubeTranscriptApi, 'list_transcripts'):
-            print(f"DEBUG: Usando list_transcripts para {vid}")
             transcript_list = YouTubeTranscriptApi.list_transcripts(vid)
             
-            # Lista todas as transcrições disponíveis
-            available_transcripts = list(transcript_list)
-            print(f"DEBUG: Transcrições disponíveis: {[t.language_code for t in available_transcripts]}")
-            
-            transcript = None
-            # Tenta encontrar em português primeiro
-            for t in available_transcripts:
-                if t.language_code in ['pt', 'pt-BR']:
-                    transcript = t
-                    print(f"DEBUG: Encontrada transcrição em: {t.language_code}")
-                    break
-            
-            # Se não encontrar, pega a primeira disponível
-            if transcript is None and available_transcripts:
-                transcript = available_transcripts[0]
-                print(f"DEBUG: Usando primeira disponível: {transcript.language_code}")
-            
-            if transcript is None:
-                raise NoTranscriptFound(vid, [], [])
-            
+            try:
+                # Prefer Portuguese
+                transcript = transcript_list.find_transcript(['pt', 'pt-BR'])
+            except:
+                # Fallback to any available
+                transcript = next(iter(transcript_list))
+                
             seq = transcript.fetch()
+            texto = " ".join([s['text'] for s in seq])
+            return jsonify({'transcription': texto})
         else:
-            # Fallback
-            print("DEBUG: Usando get_transcript (fallback)")
-            seq = YouTubeTranscriptApi.get_transcript(vid, languages=['pt-BR', 'pt'])
-        
-        texto = " ".join([s['text'] for s in seq])
-        print("DEBUG: Transcrição concluída com sucesso")
-        return jsonify({'transcription': texto})
-        
-    except TranscriptsDisabled:
-        print("ERROR: Legendas desativadas")
-        return jsonify({'error': 'Legendas estão desativadas para este vídeo.'}), 400
-    except NoTranscriptFound:
-        print("ERROR: Nenhuma transcrição encontrada via API, tentando yt-dlp")
+             # Legacy list method
+             seq = YouTubeTranscriptApi.get_transcript(vid, languages=['pt-BR', 'pt'])
+             texto = " ".join([s['text'] for s in seq])
+             return jsonify({'transcription': texto})
+
+    except (TranscriptsDisabled, NoTranscriptFound) as e:
+        print(f"API Error: {e}. Trying yt-dlp fallback.")
         try:
             texto = transcribe_with_ytdlp(url)
             return jsonify({'transcription': texto})
         except Exception as e2:
-            print(f"ERROR: Falha no fallback yt-dlp: {e2}")
-            return jsonify({'error': 'Não foi possível obter legendas. O vídeo pode não ter legendas disponíveis.'}), 500
+             return jsonify({'error': f"Could not transcribe video: {str(e2)}"}), 500
     except Exception as e:
-        print(f"ERROR: Erro ao transcrever: {type(e).__name__}: {e}")
-        import traceback
-        traceback.print_exc()
-        
-        error_msg = str(e)
-        # Detecta erro de XML/Parse e tenta yt-dlp como fallback
-        if "no element found" in error_msg.lower() or "xml" in error_msg.lower() or "parse" in error_msg.lower():
-            print("INFO: Erro de XML/Parse detectado, tentando yt-dlp como fallback")
-            try:
-                texto = transcribe_with_ytdlp(url)
-                return jsonify({'transcription': texto})
-            except Exception as e2:
-                print(f"ERROR: Falha no fallback yt-dlp: {e2}")
-                return jsonify({'error': 'Erro ao processar legendas do YouTube. Tente novamente em alguns minutos.'}), 500
-        else:
-            return jsonify({'error': f"Could not transcribe video: {str(e)}"}), 500
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/thumbnail', methods=['POST'])
 def thumbnail():
@@ -285,14 +240,7 @@ def list_formats():
         return jsonify({'error': 'Please provide a valid URL'}), 400
 
     try:
-        ydl_opts = {
-            'quiet': True,
-            'skip_download': True,
-            'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'referer': 'https://www.youtube.com/',
-            'extractor_args': {'youtube': {'player_client': ['ios']}},
-        }
-        
+        ydl_opts = {'quiet': True, 'skip_download': True}
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=False)
 
@@ -345,28 +293,15 @@ def download_file():
         ydl_opts = {
             'format': format_id,
             'outtmpl': f'{download_dir}/%(title)s.%(ext)s',
-            'noplaylist': True,
-            'quiet': False,
-            'no_warnings': False,
-            # Anti-bot configurations
-            'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'referer': 'https://www.youtube.com/',
-            'extractor_args': {'youtube': {'player_client': ['ios']}},
+            'noplaylist': True
         }
         
         if convert_to_mp3:
-            # Configuração mais robusta para conversão MP3
-            ydl_opts['format'] = 'bestaudio/best'  # Garante melhor qualidade de áudio
             ydl_opts['postprocessors'] = [{
                 'key': 'FFmpegExtractAudio',
                 'preferredcodec': 'mp3',
                 'preferredquality': '192',
             }]
-            # Adiciona processador de metadata para garantir compatibilidade
-            ydl_opts.setdefault('postprocessor_args', []).extend([
-                '-ar', '44100',  # Sample rate
-                '-ac', '2',      # Stereo
-            ])
         
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=True)
