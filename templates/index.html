@@ -453,7 +453,11 @@
             <div id="video-title-box" style="display: none; margin-top: 25px;">
                 <label for="video-title"
                     style="display: block; margin-bottom: 8px; font-size: 0.9rem; opacity: 0.7;">Título do vídeo</label>
-                <input type="text" id="video-title" readonly>
+                <div style="display: flex; gap: 10px; align-items: stretch;">
+                    <input type="text" id="video-title" readonly style="flex: 1; min-width: 0;">
+                    <button class="action-btn secondary" style="width: auto; padding: 0 20px; white-space: nowrap;"
+                        onclick="copyTitle()">📋 Copiar título</button>
+                </div>
             </div>
 
             <div class="result-box" id="transcription-output">Sua transcrição aparecerá aqui...</div>
@@ -644,6 +648,20 @@
             try {
                 await writeClipboard(text);
                 showToast("Transcrição copiada!");
+            } catch (e) {
+                showToast("Não foi possível copiar: " + e.message, true);
+            }
+        }
+
+        async function copyTitle() {
+            const text = document.getElementById('video-title').value.trim();
+            if (!text) {
+                showToast("Nada para copiar!", true);
+                return;
+            }
+            try {
+                await writeClipboard(text);
+                showToast("Título copiado!");
             } catch (e) {
                 showToast("Não foi possível copiar: " + e.message, true);
             }
