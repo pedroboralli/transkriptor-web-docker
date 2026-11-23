@@ -1,6 +1,6 @@
 flask
-youtube-transcript-api==0.6.2
-yt-dlp
+youtube-transcript-api==1.2.4
+yt-dlp==2026.7.4
 requests
 openai
 gunicorn

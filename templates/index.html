@@ -200,9 +200,57 @@
         /* Grid for formats */
         .formats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 20px;
-            margin-top: 30px;
+            grid-template-columns: 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        /* Sub-tabs for format types */
+        .sub-tab-buttons {
+            display: flex;
+            gap: 8px;
+            margin: 20px 0 0 0;
+            background: rgba(0,0,0,0.15);
+            padding: 4px;
+            border-radius: 10px;
+            width: fit-content;
+        }
+
+        .sub-tab-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            padding: 8px 18px;
+            border-radius: 7px;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.25s ease;
+        }
+
+        .sub-tab-btn:hover {
+            color: white;
+            background: rgba(255,255,255,0.05);
+        }
+
+        .sub-tab-btn.active {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 3px 8px rgba(99,102,241,0.35);
+        }
+
+        .sub-tab-btn.green.active {
+            background: #10b981;
+            box-shadow: 0 3px 8px rgba(16,185,129,0.35);
+        }
+
+        .format-panel {
+            display: none;
+        }
+
+        .format-panel.active {
+            display: block;
         }
 
         .format-column h3 {
@@ -230,6 +278,57 @@
             background: rgba(255, 255, 255, 0.08);
             border-color: rgba(255, 255, 255, 0.2);
             transform: translateX(5px);
+        }
+
+        #download-progress {
+            display: none;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--glass-border);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+
+        #download-progress.show {
+            display: block;
+        }
+
+        .progress-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            font-size: 0.9em;
+        }
+
+        .progress-percent {
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .progress-track {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 999px;
+            height: 8px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            border-radius: 999px;
+            background: linear-gradient(90deg, #6366f1, #34d399);
+            transition: width 0.3s ease;
+        }
+
+        .progress-bar.indeterminate {
+            width: 100%;
+            animation: pulse 1.2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.35; }
+            50% { opacity: 1; }
         }
 
         .tag {
@@ -343,18 +442,15 @@
                     autocomplete="off">
             </div>
 
-            <div style="display: flex; gap: 15px;">
-                <button class="action-btn" onclick="transcribeVideo(this)">
-                    <div class="spinner"></div>
-                    <span>✨ Iniciar Transcrição</span>
-                </button>
-                <button class="action-btn secondary" style="width: auto;" onclick="copyTranscription()">
-                    📋
-                </button>
-            </div>
+            <button class="action-btn" onclick="transcribeVideo(this)">
+                <div class="spinner"></div>
+                <span>✨ Iniciar Transcrição</span>
+            </button>
 
-            <div class="result-box" id="transcription-output">
-                Sua transcrição aparecerá aqui...
+            <div class="result-box" id="transcription-output">Sua transcrição aparecerá aqui...</div>
+            <div style="margin-top: 10px; text-align: right;">
+                <button class="action-btn secondary" style="width: auto; padding: 10px 20px;"
+                    onclick="copyTranscription()">📋 Copiar transcrição</button>
             </div>
         </div>
 
@@ -368,6 +464,13 @@
                 <span>🔍 Buscar Formatos</span>
             </button>
 
+            <div id="download-progress">
+                <div class="progress-info">
+                    <span id="progress-stage">Preparando</span>
+                    <span><span id="progress-meta" style="opacity:0.6;font-size:0.85em;margin-right:8px"></span><span class="progress-percent" id="progress-percent">0%</span></span>
+                </div>
+                <div class="progress-track"><div class="progress-bar" id="progress-bar"></div></div>
+            </div>
             <div id="format-list"></div>
         </div>
 
@@ -432,9 +535,11 @@
 
             <div class="result-box" id="srt-output" style="font-family: monospace;">Resultado SRT aparecerá aqui...
             </div>
-            <div style="margin-top: 10px; text-align: right;">
+            <div style="margin-top: 10px; text-align: right; display: flex; gap: 10px; justify-content: flex-end;">
                 <button class="action-btn secondary" style="width: auto; padding: 10px 20px;"
                     onclick="copyToClipboard('srt-output')">Copiar</button>
+                <button class="action-btn secondary" style="width: auto; padding: 10px 20px; background: rgba(59, 130, 246, 0.2); border-color: #3b82f6;"
+                    onclick="downloadSRT()">Baixar SRT</button>
             </div>
         </div>
     </div>
@@ -449,6 +554,13 @@
 
             document.getElementById(tabId).classList.add('active');
             event.target.classList.add('active');
+        }
+
+        function switchFormatTab(panelId, btn) {
+            document.querySelectorAll('.format-panel').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.sub-tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById('panel-' + panelId).classList.add('active');
+            btn.classList.add('active');
         }
 
         function showToast(msg, isError = false) {
@@ -494,13 +606,34 @@
             }
         }
 
-        async function copyTranscription() {
-            const text = document.getElementById('transcription-output').textContent;
-            if (text && text !== 'Sua transcrição aparecerá aqui...') {
+        // navigator.clipboard só existe em HTTPS/localhost; via IP em HTTP usa o fallback com execCommand
+        async function writeClipboard(text) {
+            if (navigator.clipboard && window.isSecureContext) {
                 await navigator.clipboard.writeText(text);
-                showToast("Texto copiado para a área de transferência!");
-            } else {
+                return;
+            }
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.setAttribute('readonly', '');
+            ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0';
+            document.body.appendChild(ta);
+            ta.select();
+            const ok = document.execCommand('copy');
+            ta.remove();
+            if (!ok) throw new Error('O navegador bloqueou a cópia');
+        }
+
+        async function copyTranscription() {
+            const text = document.getElementById('transcription-output').textContent.trim();
+            if (!text || text === 'Sua transcrição aparecerá aqui...' || text.startsWith('Erro: ')) {
                 showToast("Nada para copiar!", true);
+                return;
+            }
+            try {
+                await writeClipboard(text);
+                showToast("Transcrição copiada!");
+            } catch (e) {
+                showToast("Não foi possível copiar: " + e.message, true);
             }
         }
 
@@ -521,36 +654,50 @@
 
                 const container = document.getElementById('format-list');
                 container.innerHTML = `
-                    <div class="formats-grid">
-                        <div class="format-column" id="vid-col"><h3>Vídeo</h3></div>
-                        <div class="format-column" id="aud-col"><h3>Áudio</h3></div>
+                    <div class="sub-tab-buttons">
+                        <button class="sub-tab-btn active" onclick="switchFormatTab('va', this)">🎬 Vídeo + Áudio</button>
+                        <button class="sub-tab-btn" onclick="switchFormatTab('vid', this)">📽️ Só Vídeo</button>
+                        <button class="sub-tab-btn" onclick="switchFormatTab('aud', this)">🎧 Só Áudio</button>
                     </div>
+                    <div id="panel-va" class="format-panel active"></div>
+                    <div id="panel-vid" class="format-panel"></div>
+                    <div id="panel-aud" class="format-panel"></div>
                 `;
 
-                const vidCol = document.getElementById('vid-col');
-                const audCol = document.getElementById('aud-col');
+                const vaPanel  = document.getElementById('panel-va');
+                const vidPanel = document.getElementById('panel-vid');
+                const audPanel = document.getElementById('panel-aud');
 
                 data.formats.forEach(f => {
-                    const el = document.createElement('div');
-                    el.className = 'format-card';
-
-                    if (f.type === 'video') {
+                    if (f.type === 'video_audio') {
+                        const el = document.createElement('div');
+                        el.className = 'format-card';
                         el.innerHTML = `
-                            <span>${f.ext.toUpperCase()} <span class="tag">${f.resolution}</span></span>
-                            <span style="font-size: 0.9em; opacity: 0.8">${f.size_mb}</span>
+                            <span>${f.ext.toUpperCase()} <span class="tag" style="background:rgba(16,185,129,0.2);color:#34d399">${f.resolution}</span> <span style="font-size:0.75em;opacity:0.6">${f.fps}fps</span></span>
+                            <span style="font-size:0.9em;opacity:0.8">${f.size_mb}</span>
                         `;
                         el.onclick = () => downloadFile(url, f.format_id);
-                        vidCol.appendChild(el);
-                    } else {
-                        // Audio wrapper
-                        const wrapper = document.createElement('div');
-                        wrapper.style.display = 'flex';
-                        wrapper.style.flexDirection = 'column';
-                        wrapper.style.gap = '5px';
+                        vaPanel.appendChild(el);
 
+                    } else if (f.type === 'video') {
+                        const el = document.createElement('div');
+                        el.className = 'format-card';
+                        el.innerHTML = `
+                            <span>${f.ext.toUpperCase()} <span class="tag">${f.resolution}</span> <span style="font-size:0.75em;opacity:0.6">${f.fps}fps</span></span>
+                            <span style="font-size:0.9em;opacity:0.8">${f.size_mb}</span>
+                        `;
+                        el.onclick = () => downloadFile(url, f.format_id);
+                        vidPanel.appendChild(el);
+
+                    } else {
+                        const wrapper = document.createElement('div');
+                        wrapper.style.cssText = 'display:flex;flex-direction:column;gap:5px;margin-bottom:5px';
+
+                        const el = document.createElement('div');
+                        el.className = 'format-card';
                         el.innerHTML = `
                             <span>${f.ext.toUpperCase()} <span class="tag">${f.bitrate}</span></span>
-                            <span style="font-size: 0.9em; opacity: 0.8">${f.size_mb}</span>
+                            <span style="font-size:0.9em;opacity:0.8">${f.size_mb}</span>
                         `;
                         el.onclick = () => downloadFile(url, f.format_id);
                         wrapper.appendChild(el);
@@ -562,9 +709,14 @@
                             mp3.onclick = () => downloadFile(url, f.format_id, true);
                             wrapper.appendChild(mp3);
                         }
-                        audCol.appendChild(wrapper);
+                        audPanel.appendChild(wrapper);
                     }
                 });
+
+                // Abre a aba que tiver conteudo
+                if (vaPanel.children.length === 0 && vidPanel.children.length > 0) {
+                    switchFormatTab('vid', container.querySelector('[onclick*="vid"]'));
+                }
 
             } catch (error) {
                 showToast(error.message, true);
@@ -573,34 +725,81 @@
             }
         }
 
+        function renderProgress({ stage, percent, speed, eta, indeterminate = false }) {
+            document.getElementById('download-progress').classList.add('show');
+            document.getElementById('progress-stage').textContent = stage || '';
+
+            const bar = document.getElementById('progress-bar');
+            const percentEl = document.getElementById('progress-percent');
+            const meta = [speed, eta ? `faltam ${eta}` : ''].filter(Boolean).join(' · ');
+            document.getElementById('progress-meta').textContent = meta;
+
+            // Mux e conversão não reportam bytes: mostra a barra pulsando em vez de um número falso
+            bar.classList.toggle('indeterminate', indeterminate);
+            if (indeterminate) {
+                percentEl.textContent = '';
+            } else {
+                const p = Math.max(0, Math.min(100, percent || 0));
+                bar.style.width = p + '%';
+                percentEl.textContent = p.toFixed(0) + '%';
+            }
+        }
+
+        function hideProgress() {
+            const panel = document.getElementById('download-progress');
+            panel.classList.remove('show');
+            document.getElementById('progress-bar').style.width = '0%';
+            document.getElementById('progress-bar').classList.remove('indeterminate');
+        }
+
         async function downloadFile(url, formatId, convertMp3 = false) {
-            showToast("Iniciando download... Aguarde.", false);
+            renderProgress({ stage: 'Preparando', percent: 0 });
             try {
                 const formData = new FormData();
                 formData.append('url', url);
                 formData.append('format_id', formatId);
                 formData.append('convert_to_mp3', convertMp3);
 
-                const response = await fetch('/download_file', {
-                    method: 'POST',
-                    body: formData
-                });
+                const startRes = await fetch('/download_file', { method: 'POST', body: formData });
+                const start = await startRes.json();
+                if (!startRes.ok) throw new Error(start.error || "Erro no download");
 
-                if (!response.ok) {
-                    const err = await response.json();
-                    throw new Error(err.error || "Erro no download");
+                const jobId = start.job_id;
+                let job;
+
+                // Acompanha o progresso real do yt-dlp no servidor
+                while (true) {
+                    await new Promise(r => setTimeout(r, 500));
+
+                    const res = await fetch(`/download_progress/${jobId}`);
+                    job = await res.json();
+                    if (!res.ok) throw new Error(job.error || "Progresso indisponível");
+
+                    if (job.status === 'error') throw new Error(job.error || "Erro no download");
+                    if (job.status === 'done') break;
+
+                    renderProgress({
+                        stage: job.stage,
+                        percent: job.percent,
+                        speed: job.speed,
+                        eta: job.eta,
+                        indeterminate: job.status === 'processing'
+                    });
                 }
 
-                const blob = await response.blob();
-                const downUrl = window.URL.createObjectURL(blob);
+                renderProgress({ stage: 'Concluído', percent: 100 });
+
                 const a = document.createElement('a');
-                a.href = downUrl;
-                a.download = `download_${Date.now()}.${convertMp3 ? 'mp3' : 'mp4'}`; // Nome genérico, mas funcional
+                a.href = `/download_result/${jobId}`;
+                a.download = job.filename || `download_${Date.now()}.${convertMp3 ? 'mp3' : 'mp4'}`;
                 document.body.appendChild(a);
                 a.click();
                 a.remove();
+
                 showToast("Download concluído!");
+                setTimeout(hideProgress, 2000);
             } catch (e) {
+                hideProgress();
                 showToast("Erro: " + e.message, true);
             }
         }
@@ -679,11 +878,33 @@
             }
         }
 
-        function copyToClipboard(elementId) {
-            const text = document.getElementById(elementId).textContent;
+        async function copyToClipboard(elementId) {
+            const text = document.getElementById(elementId).textContent.trim();
             if (!text) return;
-            navigator.clipboard.writeText(text);
-            showToast("Copiado!");
+            try {
+                await writeClipboard(text);
+                showToast("Copiado!");
+            } catch (e) {
+                showToast("Não foi possível copiar: " + e.message, true);
+            }
+        }
+
+        function downloadSRT() {
+            const text = document.getElementById('srt-output').textContent;
+            if (!text || text === "Resultado SRT aparecerá aqui...") {
+                showToast("Nenhuma legenda para baixar!", true);
+                return;
+            }
+            const blob = new Blob([text], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'legenda.srt';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast("Download iniciado!");
         }
     </script>
 </body>
