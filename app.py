@@ -195,6 +195,19 @@ def generate_srt():
 def index():
     return render_template('index.html')
 
+# PWA: manifest e service worker servidos na raiz para que o escopo cubra o app inteiro
+@app.route('/manifest.webmanifest')
+def manifest():
+    return send_from_directory(app.static_folder, 'manifest.webmanifest',
+                               mimetype='application/manifest+json')
+
+@app.route('/sw.js')
+def service_worker():
+    resp = send_from_directory(app.static_folder, 'sw.js', mimetype='application/javascript')
+    resp.headers['Cache-Control'] = 'no-cache'
+    resp.headers['Service-Worker-Allowed'] = '/'
+    return resp
+
 def get_video_title(url):
     """Busca o título do vídeo via oEmbed do YouTube; retorna None se falhar."""
     try:

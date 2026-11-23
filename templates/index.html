@@ -3,8 +3,18 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Transkriptor 2.0</title>
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.webmanifest">
+    <meta name="theme-color" content="#1e1b4b">
+    <meta name="description" content="Transcreva, baixe e legende vídeos do YouTube.">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32.png">
+    <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Transkriptor">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
@@ -415,6 +425,60 @@
 
         .loading span {
             display: none;
+        }
+        /* Mobile */
+        @media (max-width: 640px) {
+            body {
+                align-items: flex-start;
+                padding-top: env(safe-area-inset-top);
+                padding-bottom: env(safe-area-inset-bottom);
+            }
+
+            .container {
+                margin: 12px;
+                padding: 20px 16px;
+                border-radius: 18px;
+            }
+
+            header {
+                margin-bottom: 24px;
+            }
+
+            h1 {
+                font-size: 2.2rem;
+            }
+
+            p.subtitle {
+                font-size: 1rem;
+            }
+
+            .tab-buttons {
+                width: auto;
+                flex-wrap: wrap;
+                gap: 6px;
+            }
+
+            .tab-btn {
+                padding: 8px 14px;
+                font-size: 0.9rem;
+            }
+
+            .sub-tab-buttons {
+                flex-wrap: wrap;
+            }
+
+            input[type="text"] {
+                padding: 14px 16px;
+                font-size: 16px; /* evita zoom automático no iOS */
+            }
+
+            textarea {
+                font-size: 16px;
+            }
+
+            .action-btn {
+                padding: 14px 20px;
+            }
         }
     </style>
 </head>
@@ -935,6 +999,13 @@
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
             showToast("Download iniciado!");
+        }
+    </script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').catch(err => console.warn('SW não registrado:', err));
+            });
         }
     </script>
 </body>
