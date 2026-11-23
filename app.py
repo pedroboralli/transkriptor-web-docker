@@ -195,6 +195,20 @@ def generate_srt():
 def index():
     return render_template('index.html')
 
+def get_video_title(url):
+    """Busca o título do vídeo via oEmbed do YouTube; retorna None se falhar."""
+    try:
+        r = requests.get('https://www.youtube.com/oembed',
+                         params={'url': url, 'format': 'json'}, timeout=10)
+        r.raise_for_status()
+        return r.json().get('title')
+    except Exception as e:
+        print(f"Não foi possível obter o título: {e}")
+        return None
+
+def transcription_response(url, texto):
+    return jsonify({'transcription': texto, 'title': get_video_title(url)})
+
 @app.route('/transcribe', methods=['POST'])
 def transcribe():
     url = request.form.get('url')
@@ -223,13 +237,13 @@ def transcribe():
             item.text if hasattr(item, 'text') else item.get('text', '')
             for item in seq
         )
-        return jsonify({'transcription': texto})
+        return transcription_response(url, texto)
 
     except (TranscriptsDisabled, NoTranscriptFound) as e:
         print(f"API Error: {e}. Trying yt-dlp fallback.")
         try:
             texto = transcribe_with_ytdlp(url)
-            return jsonify({'transcription': texto})
+            return transcription_response(url, texto)
         except Exception as e2:
             return jsonify({'error': f"Could not transcribe video: {str(e2)}"}), 500
     except Exception as e:
@@ -238,7 +252,7 @@ def transcribe():
         # Tenta yt-dlp como fallback para erros inesperados também
         try:
             texto = transcribe_with_ytdlp(url)
-            return jsonify({'transcription': texto})
+            return transcription_response(url, texto)
         except Exception as e2:
             return jsonify({'error': str(e)}), 500
 

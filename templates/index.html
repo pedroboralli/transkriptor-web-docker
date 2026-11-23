@@ -447,11 +447,16 @@
                 <span>✨ Iniciar Transcrição</span>
             </button>
 
-            <div class="result-box" id="transcription-output">Sua transcrição aparecerá aqui...</div>
-            <div style="margin-top: 10px; text-align: right;">
-                <button class="action-btn secondary" style="width: auto; padding: 10px 20px;"
-                    onclick="copyTranscription()">📋 Copiar transcrição</button>
+            <button class="action-btn secondary" style="margin-top: 12px;"
+                onclick="copyTranscription()">📋 Copiar transcrição</button>
+
+            <div id="video-title-box" style="display: none; margin-top: 25px;">
+                <label for="video-title"
+                    style="display: block; margin-bottom: 8px; font-size: 0.9rem; opacity: 0.7;">Título do vídeo</label>
+                <input type="text" id="video-title" readonly>
             </div>
+
+            <div class="result-box" id="transcription-output">Sua transcrição aparecerá aqui...</div>
         </div>
 
         <!-- Download Tab -->
@@ -585,6 +590,9 @@
             const url = document.getElementById('transcribe-url').value;
             if (!url) { showToast("Cole uma URL primeiro!", true); return; }
 
+            const titleBox = document.getElementById('video-title-box');
+            titleBox.style.display = 'none';
+
             setLoading(btn, true);
             try {
                 const response = await fetch('/transcribe', {
@@ -596,6 +604,10 @@
 
                 if (data.error) throw new Error(data.error);
 
+                if (data.title) {
+                    document.getElementById('video-title').value = data.title;
+                    titleBox.style.display = 'block';
+                }
                 document.getElementById('transcription-output').textContent = data.transcription;
                 showToast("Transcrição concluída!");
             } catch (error) {
